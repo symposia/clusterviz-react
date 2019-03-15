@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
+import $ from "jquery";
 
 import "./ClusterViz.css";
 
@@ -58,6 +59,7 @@ class ClusterViz extends Component {
 
   setupVisiaulization() {
     const nodes = Object.values(this.state.data);
+    var typeFilterList;
 
     const width = this.props.width;
     const height = this.props.height;
@@ -68,11 +70,11 @@ class ClusterViz extends Component {
     const highlight_trans = 0.1;
     const fill = d3.scaleOrdinal(d3.schemeCategory10);
 
-    // function set_focus() {
-    //   node.style("opacity", function(o) {
-    //     return typeFilterList.includes(o.sourceName) ? 1 : highlight_trans;
-    //   });
-    // }
+    function set_focus() {
+      nodeImages.style("opacity", function(o) {
+        return typeFilterList.includes(o.sourceName) ? 1 : highlight_trans;
+      });
+    }
 
     // Outermost Container
     const svg = d3.select(this.refs.anchor);
@@ -285,7 +287,7 @@ class ClusterViz extends Component {
       .style("opacity", 1);
 
     const resetZoomButton = document.getElementById("reset-zoom");
-    resetZoomButton.addEventListener("click", (event) => {
+    resetZoomButton.addEventListener("click", event => {
       event.stopPropagation();
       gNodes
         .transition()
@@ -316,6 +318,103 @@ class ClusterViz extends Component {
         .duration(750)
         .call(zoom.transform, transform);
     });
+
+    filter(this.state.data);
+    function filter(data) {
+      var newsSources = [];
+      var exists = [];
+      var filtered = false;
+
+      for (let el in data) {
+        var node = data[el];
+        if (!exists.includes(node.sourceName)) {
+          exists.push(node.sourceName);
+          newsSources.push({ sourceName: node.sourceName, url: node.url });
+        }
+      }
+
+      typeFilterList = exists;
+      console.log(typeFilterList);
+
+      function stateTemplate(sourceName) {
+        return (
+          '<div class="list-item container__row">' +
+          `<input class="cbx" id="${sourceName}"  name="${sourceName}" type="checkbox">` +
+          `<label class="source-check" for="${sourceName}"><span class="slider"></span></label>` +
+          `<div class="label-text">${sourceName}</div>` +
+          "</div>"
+        );
+      }
+
+      // Populate list with states
+      newsSources.forEach(function(s) {
+        document
+          .getElementById("news-sources-filter-list")
+          .insertAdjacentHTML("beforeend", stateTemplate(s.sourceName));
+      });
+
+      // Events
+      const resetSourcesButton = document.querySelector(".reset-btn");
+      resetSourcesButton.addEventListener("click", e => {
+        e.stopPropagation();
+        typeFilterList = exists;
+        // $(":checkbox").prop("checked", false);
+        const list = document.querySelectorAll("input[type=checkbox]");
+        for (let item of list) {
+          item.checked = false;
+        }
+        console.log(typeFilterList);
+        filtered = false;
+        set_focus();
+      });
+
+      const dropdownSearchInput = document.querySelector(".dropdown-search");
+      dropdownSearchInput.addEventListener("input", function(e) {
+        e.stopPropagation();
+        var target = $(this);
+        var dropdownList = target.closest(".dropdown-list");
+        var search = target.val().toLowerCase();
+
+        if (!search) {
+          dropdownList.find(".label-text").show();
+          return false;
+        }
+
+        dropdownList.find(".list-item").each(function() {
+          var text = $(this)
+            .text()
+            .toLowerCase();
+          var match = text.indexOf(search) > -1;
+          $(this).toggle(match);
+        });
+      });
+
+      document
+        .querySelector(".dropdown-list")
+        .addEventListener("change", function(e) {
+          if (e.target.type === "checkbox") {
+            if (!filtered) {
+              typeFilterList = [];
+              filtered = true;
+            }
+
+            if (e.target.checked) {
+              typeFilterList.push(d3.select(e.target).attr("name"));
+              set_focus();
+            } else {
+              typeFilterList.splice(typeFilterList.indexOf("foo"), 1);
+              if (typeFilterList.length === 0) {
+                typeFilterList = exists;
+                filtered = false;
+              }
+              set_focus();
+            }
+
+            console.log(typeFilterList);
+          }
+          return false;
+        });
+    }
   }
 }
 
