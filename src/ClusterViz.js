@@ -31,7 +31,27 @@ class ClusterViz extends Component {
         <svg width="1000" height="600">
           <g ref="anchor" />
         </svg>
-        <div className="second" />
+        <button id="reset-zoom" class="my-btn">
+          Reset Zoom
+        </button>
+        <div id="tooltip-container" className="second" />
+        <div id="filter-container" className="dropdown-list">
+          <input
+            type="search"
+            placeholder="Search Sources"
+            class="dropdown-search"
+          />
+          <ul id="news-sources-filter-list" />
+          <button
+            class="my-btn reset-btn"
+            type="text"
+            placeholder=""
+            aria-label="reset filters"
+            aria-describedby="basic-addon1"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     );
   }
@@ -263,6 +283,39 @@ class ClusterViz extends Component {
       .transition()
       .duration(1000)
       .style("opacity", 1);
+
+    const resetZoomButton = document.getElementById("reset-zoom");
+    resetZoomButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      gNodes
+        .transition()
+        .duration(750)
+        .attr("transform", "");
+
+      const highlightedElements = document.getElementsByClassName(
+        "highlighted"
+      );
+      console.log(highlightedElements);
+      if (highlightedElements.length > 0) {
+        for (let el of highlightedElements) {
+          console.log(el);
+          el.classList.remove("highlighted");
+        }
+      }
+
+      tooltip
+        .transition()
+        .duration(50)
+        .style("opacity", 0)
+        .style("pointer-events", null);
+
+      tooltip.transition().style("visibility", "hidden");
+
+      gMain
+        .transition()
+        .duration(750)
+        .call(zoom.transform, transform);
+    });
   }
 }
 
